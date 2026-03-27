@@ -1,0 +1,106 @@
+import streamlit as st
+import google.generativeai as genai
+from PIL import Image
+
+API_KEY = "AIzaSyDRDbpLkuoNscCiALpmAwTBjr_WSAhwhNQ"
+genai.configure(api_key=API_KEY)
+
+# إعداد النموذج (Gemini 1.5 Flash - سريع وذكي جداً في الصور)
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+# إعدادات الواجهة
+st.set_page_config(page_title="Personal AI", layout="wide")
+
+def apply_style(gender):
+    if gender == "بنت":
+        bg, text = "#FFF0F5", "#D81B60"
+    elif gender == "شاب":
+        bg, text = "#E1F5FE", "#01579B"
+    else:
+        bg, text = "#FFFFFF", "#333333"
+    
+    st.markdown(f"""<style>.stApp {{ background-color: {bg}; color: {text}; }}</style>""", unsafe_allow_html=True)
+
+# القائمة الجانبية (يمين)
+with st.sidebar:
+    st.title("⚙️ التحكم")
+    if st.button("➕ محادثة جديدة"):
+        st.session_state.messages = []
+    st.write("---")
+    gender = st.radio("الجنس:", ["غير محدد", "بنت", "شاب"])
+    lang = st.selectbox("اللغة:", ["العربية الفصحى", "السورية", "العراقية", "كوردية سوراني", "كوردية باديني", "تركماني", "تركي", "English"])
+
+apply_style(gender)
+
+# التعليمات البرمجية للشخصية (السر خلف اللباقة)
+system_prompt = f"""
+أنت مساعد ذكي جداً تعرف كل شيء في العالم. 
+أسلوبك: هادئ، لطيف، محترم جداً ولبق.
+إذا كان المستخدم 'بنت': كن أنثوياً في تعبيراتك (مثلاً: أهلاً بكِ عزيزتي، يسعدني مساعدتكِ).
+إذا كان المستخدم 'شاب': كن هادئاً وواقعياً.
+تحدث حصراً بلغة: {lang}.
+أنت بارع في حل الرياضيات وكشف فبركة الصور.
+"""
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# عرض الرسائل القديمة
+for m in st.session_state.messages:
+    with st.chat_message(m["role"]):
+        st.markdown(m["content"])
+
+# إدخال الصور أو الأسئلة
+img_file = st.file_uploader("ارفع صورة للتحليل (رياضيات/فبركة)", type=['png', 'jpg', 'jpeg'])
+user_input = st.chat_input("اسألني أي شيء...")
+
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.write(user_input)
+
+    # إرسال الطلب لـ Gemini
+    with st.chat_message("assistant"):
+        prompt_parts = [system_prompt, user_input]
+        if img_file:
+            img = Image.open(img_file)
+            prompt_parts.append(img)
+        
+        response = model.generate_content(prompt_parts)
+        st.write(response.text)
+        st.session_state.messages.append({"role": "assistant", "content": response.text})
+
+import streamlit as st
+
+# دالة لتصميم الشعار حسب الجنس
+def display_logo(gender):
+    if gender == "بنت":
+        # تصميم كيووت ووردي مع ظلال ناعمة
+        logo_html = """
+        <div style="text-align: center; padding: 20px;">
+            <h1 style="font-family: 'Arial'; color: #FF69B4; text-shadow: 2px 2px 4px #FFB6C1; 
+            font-size: 50px; margin-bottom: 0;">✨ M.Elena ✨</h1>
+            <p style="color: #FF1493; font-style: italic;">رقة، ذكاء، ولباقة</p>
+        </div>
+        """
+    elif gender == "شاب":
+        # تصميم أسود ملكي فخم وبسيط
+        logo_html = """
+        <div style="text-align: center; padding: 20px;">
+            <h1 style="font-family: 'Verdana'; color: #000000; letter-spacing: 3px; 
+            font-size: 45px; margin-bottom: 0;">M.ELENA</h1>
+            <p style="color: #333333; font-weight: bold;">الذكاء والقوة</p>
+        </div>
+        """
+    else:
+        # الشعار الافتراضي باللون الرمادي الهادئ
+        logo_html = """
+        <div style="text-align: center; padding: 20px;">
+            <h1 style="font-family: 'Arial'; color: #808080; font-size: 40px;">M.Elena</h1>
+        </div>
+        """
+    st.markdown(logo_html, unsafe_allow_html=True)
+
+# استدعاء الشعار في بداية الصفحة
+# (تأكدي أن تضعي هذا السطر بعد اختيار الجنس في الكود)
+# display_logo(gender)
